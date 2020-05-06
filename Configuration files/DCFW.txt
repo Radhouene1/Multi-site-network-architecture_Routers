@@ -1,0 +1,39 @@
+ip domain-name NETTOP.OTBS
+username rad privilege 15 password cisco
+crypto key generate rsa
+1024
+line vty 0 4
+transport input ssh 
+login local
+service password-encryption
+
+
+interface ethernet 0/2
+no sh 
+exit 
+
+interface ethernet 0/2.1
+encapsulation dot1Q 1 native
+ip address 10.117.100.254 255.255.255.0
+exit
+
+interface ethernet 0/2.101
+encapsulation dot1Q 101
+ip address 10.117.101.254 255.255.255.0
+exit
+
+
+interface ethernet 0/2.102
+encapsulation dot1Q 102
+ip address 10.117.102.254 255.255.255.0
+exit
+
+
+interface ethernet 0/0
+no sh 
+duplex full
+ip add 10.117.99.1 255.255.255.0
+exit
+
+ip route 0.0.0.0 0.0.0.0 10.117.99.2
+

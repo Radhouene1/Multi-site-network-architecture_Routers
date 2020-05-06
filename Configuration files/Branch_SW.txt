@@ -1,0 +1,67 @@
+ip domain-name NETTOP.OTBS
+username rad privilege 15 password cisco
+crypto key generate rsa
+1024
+line vty 0 4
+transport input ssh 
+login local
+service password-encryption
+
+vlan 100
+exit
+
+vlan 101
+exit
+
+vlan 102
+exit
+
+vlan 103
+exit
+
+vlan 104
+exit
+
+----------------- Etherchannel 1 -------------------
+interface ethernet 0/0
+switchport trunk encapsulation dot1q
+switchport mode trunk
+duplex full
+channel-group 1 mode on
+exit
+
+interface ethernet 0/1
+switchport trunk encapsulation dot1q
+switchport mode trunk
+duplex full
+channel-group 1 mode on
+exit
+
+
+int e 3/0
+switchport mode access 
+switchport access vlan 101
+exit 
+
+int e 3/1
+switchport mode access 
+switchport access vlan 102
+exit 
+
+int e 3/2
+switchport mode access 
+switchport access vlan 103
+exit 
+
+int e 3/3
+switchport mode access 
+switchport access vlan 104
+exit 
+interface Vlan1
+ip address 10.119.100.1 255.255.255.0
+no sh 
+exit
+
+ip route 0.0.0.0 0.0.0.0 10.119.100.254
+
+

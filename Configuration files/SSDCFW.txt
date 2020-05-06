@@ -1,0 +1,90 @@
+
+ip domain-name NETTOP.OTBS
+username rad privilege 15 password cisco
+crypto key generate rsa
+1024
+line vty 0 4
+transport input ssh 
+login local
+service password-encryption
+
+interface ethernet 0/2
+no sh 
+exit 
+
+interface ethernet 0/2.1
+encapsulation dot1Q 1 native
+ip address 10.118.100.254 255.255.255.0
+exit
+
+interface ethernet 0/2.101
+encapsulation dot1Q 101
+ip address 10.118.101.254 255.255.255.0
+exit
+
+interface ethernet 0/2.102
+encapsulation dot1Q 102
+ip address 10.118.102.254 255.255.255.0
+exit
+
+int e0/0
+no sh
+ip add 2.2.2.2 255.255.255.252
+exit
+
+ip route 0.0.0.0 0.0.0.0 2.2.2.1
+
+-------------------- NAT Only -------------
+int e0/0
+ip nat outside
+exit
+
+int e0/2
+ip nat inside
+exit
+
+access-list 1 permit 10.118.0.0 0.0.255.255
+ip nat inside source list 1 interface e0/0 overload
+
+------------------- IPSEC + NAT-------------------------
+no access-list 1 permit 10.118.0.0 0.0.255.255
+no ip nat inside source list 1 interface e0/0 overload
+
+crypto isakmp policy 5
+hash sha
+authentication pre-share
+group 2
+lifetime 86400
+encryption 3des
+exit
+
+crypto isakmp key cisco@123 address 1.1.1.2
+
+crypto ipsec transform-set MY-SET esp-aes 128 esp-md5-hmac
+crypto ipsec security-association lifetime seconds 3600
+
+ip access-list extended VPN-TRAFFIC
+permit ip  10.118.0.0 0.0.255.255 10.115.1.0 0.0.0.255
+
+crypto map IPSEC-SITE-TO-SITE-VPN 10 ipsec-isakmp 
+match address VPN-TRAFFIC
+set peer 1.1.1.2
+set transform-set MY-SET
+
+
+int e 0/0
+crypto map IPSEC-SITE-TO-SITE-VPN
+exit 
+
+ip access-list extended 101
+deny ip 10.118.0.0 0.0.255.255 10.115.1.0 0.0.0.255
+permit ip 10.118.0.0 0.0.255.255 any
+exit
+
+ip nat inside source list 101 interface e0/0 overload
+
+
+
+
+
+

@@ -1,0 +1,39 @@
+ip domain-name NETTOP.OTBS
+username rad privilege 15 password cisco
+crypto key generate rsa
+1024
+line vty 0 4
+transport input ssh 
+login local
+service password-encryption
+
+interface ethernet 0/0
+no sh 
+ip add 192.168.122.202 255.255.255.0
+exit
+
+ip route 0.0.0.0 0.0.0.0 192.168.122.1
+ip route 10.0.0.0 255.0.0.0 10.115.1.6
+
+interface ethernet 0/1
+no sh 
+ip add 10.115.1.2 255.255.255.0
+standby 1 ip 10.115.1.10
+standby 1 priority 110
+standby 1 preempt
+exit
+
+--------------------- NAT config -----------------
+interface ethernet 0/0
+ip nat outside
+exit
+
+interface ethernet 0/1
+ip nat inside
+exit
+
+ip nat inside source list 1 interface ethernet 0/0 overload
+access-list 1 permit any
+
+
+

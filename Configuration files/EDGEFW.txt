@@ -1,0 +1,121 @@
+ip domain-name NETTOP.OTBS
+username rad privilege 15 password cisco
+crypto key generate rsa
+1024
+line vty 0 4
+transport input ssh 
+login local
+service password-encryption
+
+int e 1/0
+no sh 
+ip add 10.115.1.3 255.255.255.0
+exit
+
+int e0/0
+no sh
+ip add 1.1.1.2 255.255.255.252
+exit
+
+int e 0/1
+no sh 
+ip add 3.3.3.2 255.255.255.252
+exit 
+
+ip route 2.2.2.0 255.255.255.252 1.1.1.1
+ip route 10.118.0.0 255.255.0.0 1.1.1.1
+
+ip route 4.4.4.0 255.255.255.252 3.3.3.1
+ip route 10.119.0.0 255.255.0.0 3.3.3.1
+
+ip route 10.116.0.0 255.255.0.0 10.115.1.6
+ip route 10.117.0.0 255.255.0.0 10.115.1.6
+
+------------------------------- NAT only-------------
+int e0/0
+ip nat outside
+exit
+
+int e1/0
+ip nat inside
+exit
+
+access-list 1 permit 10.115.1.0 0.0.0.255
+ip nat inside source list 1 interface e0/0 overload
+
+int e 0/1
+ip nat outside
+exit
+ip nat inside source list 1 interface e0/1 overload
+
+------------------- IPSEC + NAT SSDC -----------------------------
+no access-list 1 permit 10.115.1.0 0.0.0.255
+no ip nat inside source list 1 interface e0/0 overload
+no ip nat inside source list 1 interface e0/1 overload
+
+crypto isakmp policy 5
+hash sha
+authentication pre-share
+group 2
+lifetime 86400
+encryption 3des
+exit
+
+crypto isakmp key cisco@123 address 2.2.2.2
+
+crypto ipsec transform-set MY-SET esp-aes 128 esp-md5-hmac
+crypto ipsec security-association lifetime seconds 3600
+
+ip access-list extended VPN-TRAFFIC
+permit ip  10.115.1.0 0.0.0.255 10.118.0.0 0.0.255.255
+
+crypto map IPSEC-SITE-TO-SITE-VPN 10 ipsec-isakmp 
+match address VPN-TRAFFIC
+set peer 2.2.2.2
+set transform-set MY-SET
+
+int e 0/0
+crypto map IPSEC-SITE-TO-SITE-VPN
+exit 
+
+ip access-list extended 101
+deny ip 10.115.1.0 0.0.0.255 10.118.0.0 0.0.255.255
+permit ip 10.115.1.0 0.0.0.255 any
+exit
+
+ip nat inside source list 101 interface e0/0 overload
+
+------------------- IPSEC + NAT Branch-------------------------
+
+crypto isakmp policy 5
+hash sha
+authentication pre-share
+group 2
+lifetime 86400
+encryption 3des
+exit
+
+crypto isakmp key cisco@123 address 4.4.4.2
+
+crypto ipsec transform-set MY-SET1 esp-aes 128 esp-md5-hmac
+crypto ipsec security-association lifetime seconds 3600
+
+ip access-list extended VPN-TRAFFIC1
+permit ip  10.115.1.0 0.0.0.255 10.119.0.0 0.0.255.255
+
+crypto map IPSEC-SITE-TO-SITE-VPN1 10 ipsec-isakmp 
+match address VPN-TRAFFIC1
+set peer 4.4.4.2
+set transform-set MY-SET1
+
+int e 0/1
+crypto map IPSEC-SITE-TO-SITE-VPN1
+exit 
+
+ip access-list extended 102
+deny ip 10.115.1.0 0.0.0.255 10.119.0.0 0.0.255.255
+permit ip 10.115.1.0 0.0.0.255 any
+exit
+
+ip nat inside source list 102 interface e0/0 overload
+
